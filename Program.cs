@@ -24,7 +24,10 @@ namespace EfCoreSQLiteCrudApp
                     Console.WriteLine("3. Update a Student");
                     Console.WriteLine("4. Delete a Student");
                     Console.WriteLine("5. Exit");
-                    Console.WriteLine("6. Add a Department");
+                    Console.WriteLine("Enter Your Choice:");
+                    Console.WriteLine("6. LINQ Queries Demo");
+                    Console.WriteLine("7. LINQ Join (Students & Departments)");
+                    Console.WriteLine("8. Add a Department");                   
                     Console.Write("Select an option: ");
                     var choice = Console.ReadLine();
 
@@ -47,8 +50,15 @@ namespace EfCoreSQLiteCrudApp
                             Console.WriteLine("Exiting the Application");
                             break;
                         case "6":
+                            LinqQueriesMenu();
+                            break;
+                        case "7":
+                            JoinStudentWithDepartments();
+                            break;
+                        case "8":
                             AddDepartment(context);
                             break;
+
                         default:
                             Console.WriteLine("Invalid option, please try again.");
                             break;
@@ -206,6 +216,158 @@ namespace EfCoreSQLiteCrudApp
                 Console.WriteLine("An error occurred while adding the department.");
                 Console.WriteLine($"Error: {ex.Message}");
             }
+        }
+        static void JoinStudentWithDepartments()
+        {
+            using (var context = new AppDbContext()) {
+                Console.WriteLine("\n-- LINQ Join Department with Name --");
+
+                var result = context.Students.Join(context.Departments,
+                    s => s.DepartmentId,    //Foreign Key
+                    d=>d.Id,    //Primary Key
+                    (s,d)=> new //Projection
+                {
+                    StudentName= s.Name,
+                    DepartmentName= d.Name,
+                }).ToList();
+                foreach (var item in result)
+                {
+                    Console.WriteLine($"Student Name: {item.StudentName}, Department: {item.DepartmentName}");
+                }
+
+                Console.WriteLine("\nPress any key to continue...");
+                Console.ReadKey();
+            }
+
+        }
+        static void LinqQueriesMenu()
+        {
+            bool exit = false;
+            while (!exit)
+            {
+                Console.Clear();
+                Console.WriteLine("\n--- LINQ Queries Demo ---");
+                Console.WriteLine("1. Filtering (Where)");
+                Console.WriteLine("2. Ordering (OrderBy)");
+                Console.WriteLine("3. Projection (Select)");
+                Console.WriteLine("4. Grouping (GroupBy)");
+                Console.WriteLine("5. Back to Main Menu");
+                Console.WriteLine("Enter Your Choice: ");
+
+                int choice = int.Parse(Console.ReadLine());
+
+                switch (choice)
+                {
+                    case 1:
+                        FilterStudents();
+                        break;
+                    case 2:
+                        OrderStudents();
+                        break;
+                    case 3:
+                        ProjectionStudents();
+                        break;
+                    case 4:
+                        GroupStudents();
+                        break;
+                    case 5:
+                        exit = true;
+                        break;
+                    default:
+                        Console.WriteLine("Invalid option, please try again.");
+                        break;
+                }
+
+                if (!exit)
+                {
+                    Console.WriteLine("Press any key to return to the menu...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        static void FilterStudents()
+        {
+            using (var context = new AppDbContext()) {
+                Console.WriteLine("\nStudent with age >=25: ");
+
+                var Students = context.Students
+                                              .Where(s => s.Age >= 25)
+                                              .Include(s => s.Department)
+                                              .ToList();
+
+                Console.WriteLine("\n--- Filtered Students ---");
+                foreach (var s in Students)
+                {
+                    Console.WriteLine($"\nID: {s.DepartmentId}, Name: {s.Name}, Age: {s.Age}, Department: {s.Department ?.Name}");
+                }
+                Console.WriteLine("\nPress any key to continue...");
+            }
+            Console.ReadKey();
+        }
+
+        static void OrderStudents()
+        {
+            using (var context = new AppDbContext())
+            {
+                Console.WriteLine("\nStudent with Ordered by Age: ");
+
+                var Students = context.Students
+                                              .OrderBy(s => s.Age)
+                                              .ToList();
+
+                Console.WriteLine("\n--- Filtered Students ---");
+                foreach (var s in Students)
+                {
+                    Console.WriteLine($"\nName: {s.Name}, Age: {s.Age}");
+                }
+                Console.WriteLine("\nPress any key to continue...");
+            }
+        }
+
+        static void ProjectionStudents()
+        {
+
+            using (var context = new AppDbContext())
+            {
+                Console.WriteLine("\nStudent Name and Age: ");
+
+                var Students = context.Students
+                                              .Select(s => new { s.Name,s.Age })
+                                              .ToList();
+
+                Console.WriteLine("\n--- Shown only Students Name and Age ---");
+                foreach (var s in Students)
+                {
+                    Console.WriteLine($"\nName: {s.Name}, Age: {s.Age}");
+                }
+                Console.WriteLine("\nPress any key to continue...");
+            }
+        }
+        static void GroupStudents()
+        {
+
+            using (var context = new AppDbContext())
+            {
+                Console.WriteLine("\nStudent Group by Department : ");
+
+                var groups = context.Students
+                                              .Include(s => s.Department)
+                                              .GroupBy(s => s.Department.Name)
+                                              .ToList();
+
+                Console.WriteLine("--- Shown by Grouping ---");
+                foreach (var group in groups)
+                {
+                    Console.WriteLine($"\nDepartment: {group.Key}");
+                    foreach (var s in group)
+                    {
+                        Console.WriteLine($"\nName: {s.Name}");
+                     }
+                }
+                Console.WriteLine("\nPress any key to continue...");
+            }
+
         }
     }
 }
